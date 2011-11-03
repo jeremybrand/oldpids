@@ -1,17 +1,26 @@
-#!/bin/sh
+#!/bin/bash --
+PATH=/bin:/usr/bin
 
-# Prints a list of PIDs based on process name that are
+set +e
+
+# Prints a list of your own PIDs based on process name that are
 # older than a required number of seconds.
 #
 # Written by: Jeremy Brand <jeremy@nirvani.net> 
-#             http://www.nirvani.net/
+#             http://www.nirvani.net/software/oldpids
 # Requires: GNU ps,grep,sed,date
 #
-# Version: 0.8
+# Version: 1.0
 # 
 # Bugs or features?
 # The list of PIDs is for the user $USER, which is
 # typically set in the environment.
+#
+# Example:
+#
+#  Find and print out all process ids of 'blastall' that are 300 seconds or older.
+#  $ oldpids blastall 300
+#
 #
 # License:
 # 
@@ -30,24 +39,65 @@
 #   
 # ChangeLog
 # 0.8 Jeremy Brand 2003/11/14
-#     - public release
+#     - public release.
+# 1.0 Jeremy Brand 2011/10/31
+#     - improved compatibility, reliability and error checking.
+#
+
+die() 
+{
+
+	message=$1
+	echo $message 1>&2
+	exit 1
+}
+
+
+requires() 
+{
+	# Requires: GNU ps,grep,sed,date
+	grep --version 2>&1 |grep -q "GNU" || die "grep is not GNU"
+	ps --version 2>&1 | grep -q "procps" || die "ps is not procps"
+	sed --version 2>&1 | grep -q "GNU" || die "sed is not GNU"
+	date --version 2>&1 | grep -q "GNU" || die "date is not GNU"
+}
 
 exit_error()
 {
   echo "Usage: $0 PROCESS_NAME OLDER_THAN" 1>&2
-  echo "Prints a list of pids, space separated, that are "
-  echo "  older than OLDER_THAN seconds." 1>&2
-  echo "Returns: 1 on missing args."
-  echo "  0 on success, even if success has no pids in the list."
-  echo "Example: $0 php 259200" 1>&2
+  echo "" 1>&2
+  echo "Prints a list of pids, space separated, that are " 1>&2
+  echo "  older than OLDER_THAN integer seconds." 1>&2
+  echo "" 1>&2
+  echo "Returns: 1 on missing args." 1>&2
+  echo "  0 on success, even if success has no pids in the list." 1>&2
+  echo "" 1>&2
+  echo "Example: $0 blastall 259200" 1>&2
+  echo "" 1>&2
   exit 1;
 }
 
-if [ -z "$2" ]; then
-  exit_error
-fi
+is_num() 
+{
+  echo $1 | egrep -q '^[0-9]+$'
+  if [ "$?" = "0" ]; then
+    true
+  else
+    echo "-----------------------------------" 1>&2
+    echo "ERROR: Argument 2 is not an integer" 1>&2
+    echo "-----------------------------------" 1>&2
+    echo 1>&2
+    exit_error
+  fi
+}
+
+is_num $2
 
 if [ "$2" -lt 1 ]; then
+  echo "----------------------------------------" 1>&2
+  echo "ERROR: Argument 2 must be greater than 0" 1>&2
+  echo "----------------------------------------" 1>&2
+  echo 1>&2
   exit_error
 fi
 
