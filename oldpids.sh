@@ -10,7 +10,7 @@ set +e
 #             http://www.nirvani.net/software/oldpids
 # Requires: GNU ps,grep,sed,date
 #
-# Version: 1.0
+# Version: 1.1
 # 
 # Bugs or features?
 # The list of PIDs is for the user $USER, which is
@@ -38,11 +38,13 @@ set +e
 #   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #   
 # ChangeLog
+#
 # 0.8 Jeremy Brand 2003/11/14
 #     - public release.
 # 1.0 Jeremy Brand 2011/10/31
 #     - improved compatibility, reliability and error checking.
-#
+# 1.1 Jeremy Brand 2011/11/03
+#     - JSON output option
 
 die() 
 {
@@ -64,7 +66,7 @@ requires()
 
 exit_error()
 {
-  echo "Usage: $0 PROCESS_NAME OLDER_THAN" 1>&2
+  echo "Usage: $0 PROCESS_NAME OLDER_THAN [--ascii || --json]" 1>&2
   echo "" 1>&2
   echo "Prints a list of pids, space separated, that are " 1>&2
   echo "  older than OLDER_THAN integer seconds." 1>&2
@@ -75,6 +77,53 @@ exit_error()
   echo "Example: $0 blastall 259200" 1>&2
   echo "" 1>&2
   exit 1;
+}
+
+display() 
+{
+	if [ "$3" = "" ]; then
+		return ""
+	else
+		true # continue
+	fi
+
+
+	pid_count=$(echo $3 | wc -w)
+
+	case "$1" in
+#		*)
+#			die "Internal ERROR: arg1 in display not valid"
+#		;;
+		"ascii")
+			echo "$3"
+		;;
+		"json")
+			cat <<EOT
+{ "oldpids": {
+	"pidname": "$2",
+	"number_of_pids": "$pid_count",
+	"pids": [
+EOT
+
+			count=0
+			for i in $3;
+			do
+				let count=count+1
+
+				if [ $pid_count -eq $count ]; then
+					echo -e '\t\t{ "pid": "'$i'" }'
+				else
+					echo -e '\t\t{ "pid": "'$i'" },'
+				fi
+
+
+			done
+			cat <<EOT
+	] } }
+EOT
+		;;
+	esac
+
 }
 
 is_num() 
@@ -91,6 +140,10 @@ is_num()
   fi
 }
 
+if [ "$1" = "" ]; then
+	exit_error
+fi
+
 is_num $2
 
 if [ "$2" -lt 1 ]; then
@@ -103,6 +156,23 @@ fi
 
 CMDNAME=$1
 CMDMAXAGE=$2
+OUTPUT_TYPE=$3
+
+case "$OUTPUT_TYPE" in
+	"")
+		otype=ascii
+	;;
+	"--json")
+		otype=json
+	;;
+	"--ascii")
+		otype=ascii
+	;;
+	*)
+		otype=ascii
+	;;
+esac
+
 
 # Init return value
 RETURN_PID_LIST=""
@@ -133,7 +203,8 @@ fi
 done
 
 if [ -n "$RETURN_PID_LIST" ]; then
-echo $RETURN_PID_LIST
+	display $otype "$CMDNAME" "$RETURN_PID_LIST"
+	# echo $RETURN_PID_LIST
 fi
 
 exit 0
