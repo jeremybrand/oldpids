@@ -1,0 +1,11 @@
+# Prints a list of your own PIDs based on process name that are
+# older than a required number of seconds.
+#
+# Written by: Jeremy Brand <jeremy@nirvani.net> 
+#             http://www.nirvani.net/software/oldpids
+# Requires: GNU ps,grep,sed,date
+#
+# Version: 1.0
+# 
+# Bugs or features?
+# The list of PIDs is for the user $USER, which is typically set in the environment.
